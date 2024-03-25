@@ -1,4 +1,4 @@
-backend_version = "2.3.2 240322"
+backend_version = "2.4.1 240326"
 print(f"Backend version: {backend_version}")
 
 # 在开头加入路径
