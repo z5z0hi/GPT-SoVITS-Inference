@@ -215,9 +215,9 @@ def get_params(data = None):
         params["speed_factor"] = speed
         params["seed"] = seed
     
-    format = data.get('format', 'wav')
-    if not format in ['wav', 'mp3', 'ogg']:
-        raise ValueError("Invalid format.")
+    
+    # if not format in ['wav', 'mp3', 'ogg']:
+    #     raise ValueError("Invalid format.")
     
     save_temp = get_param_value(params_config['save_temp'])
     request_hash = generate_file_hash(text, text_language, top_k, top_p, temperature, character_emotion, cha_name, seed)
@@ -267,7 +267,10 @@ def tts():
         else:
             sampling_rate, audio_data = next(gen)
             wav = io.BytesIO()
-            sf.write(wav, audio_data, sampling_rate, format=format)
+            try:
+                sf.write(wav, audio_data, sampling_rate, format=format)
+            except:
+                sf.write(wav, audio_data, sampling_rate, format='wav')    
             wav.seek(0)
             return Response(wav, mimetype=f'audio/{format}')
     else:
