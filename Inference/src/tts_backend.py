@@ -289,8 +289,33 @@ try:
 except:
     pass
 
+# 注册路由
 for path in routes:
     app.api_route(path, methods=['GET', 'POST'])(tts)
 
+# 便于小白理解
+def print_ipv4_ip(host = "127.0.0.1", port = 5000):
+    import socket
+
+    def get_internal_ip():
+        """获取内部IP地址"""
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            # 这不会发送真正的数据包
+            s.connect(('10.253.156.219', 1))
+            IP = s.getsockname()[0]
+        except Exception:
+            IP = '127.0.0.1'
+        finally:
+            s.close()
+        return IP
+
+    if host == "0.0.0.0":
+        display_hostname = get_internal_ip()
+        if display_hostname != "127.0.0.1":
+            print(f"Please use http://{display_hostname}:{port} to access the service.")
+
 if __name__ == "__main__":
+    print_ipv4_ip(tts_host, tts_port)
     uvicorn.run(app, host=tts_host, port=tts_port)
+
