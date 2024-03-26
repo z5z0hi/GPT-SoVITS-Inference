@@ -15,9 +15,11 @@ sys.path.append(now_dir)
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import soundfile as sf
-from flask import Flask, request, Response, jsonify, stream_with_context,send_file
-from flask_httpauth import HTTPBasicAuth
-from flask_cors import CORS
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+import tempfile
+import uvicorn  
 import io
 import urllib.parse
 import tempfile
@@ -30,6 +32,8 @@ import hashlib, json
 from Inference.src.config_manager import Inference_Config
 inference_config = Inference_Config()
 
+workers = inference_config.workers
+tts_host = inference_config.tts_host
 tts_port = inference_config.tts_port
 default_batch_size = inference_config.default_batch_size
 default_word_count = inference_config.default_word_count
@@ -90,9 +94,6 @@ def get_tts_instance_id(cha_name=None):
         print(f"Instance {index}: {tts_instance.character}, text count: {text_count[tts_instance.character.lower()]}")
     return instance_id
 
-app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
-
 
 # 存储临时文件的字典
 temp_files = {}
@@ -107,25 +108,26 @@ def generate_file_hash(*args):
 
 
 
+app = FastAPI()
 
-auth = HTTPBasicAuth()
-CORS(app, resources={r"/*": {"origins": "*"}})
+# 设置CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@auth.verify_password
-def verify_password(username, password):
-    if not enable_auth:
-        return True  # 如果没有启用验证，则允许访问
-    return users.get(username) == password
 
 
-@app.route('/character_list', methods=['GET'])
-@auth.login_required
-def character_list():
-    res = jsonify(update_character_info()['characters_and_emotions'])
+@app.get('/character_list')
+async def character_list():
+    res = JSONResponse(update_character_info()['characters_and_emotions'])
     return res
 
-@app.route('/voice/speakers', methods=['GET'])
-def speakers():
+@app.get('/voice/speakers')
+async def speakers():
     speaker_dict = update_character_info()['characters_and_emotions']
     name_list = list(speaker_dict.keys())
     speaker_list = [{"id": i, "name": name_list[i], "lang":["zh","en","ja"]} for i in range(len(name_list))]
@@ -134,7 +136,7 @@ def speakers():
         "GSVI": speaker_list,
         "GPT-SOVITS": speaker_list
     }
-    return jsonify(res)
+    return JSONResponse(res)
 params_config = {}
 
 def get_params_config():
@@ -225,25 +227,21 @@ def get_params(data = None):
     return params, cha_name, format, save_temp, request_hash, stream
 
 
-@app.route('/tts', methods=['GET', 'POST'])
-@app.route('/voice/vits', methods=['GET', 'POST'])
-@app.route('/text2audio', methods=['GET', 'POST'])
-@app.route('/t2s', methods=['GET', 'POST'])
-@app.route('/voice', methods=['GET', 'POST'])
-@auth.login_required
-def tts():
+
+async def tts(request: Request):
 
     
     # 尝试从JSON中获取数据，如果不是JSON，则从查询参数中获取
-    if request.is_json:
-        data = request.json
+    if request.method == "GET":
+        data = request.query_params
     else:
-        data = request.args
+        data = await request.json()
+
         
     try:
         params, cha_name, format, save_temp, request_hash, stream = get_params(data)
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return HTTPException(status_code=400, detail=str(e))
     
     if not is_classic:
         gen = generate_audio(cha_name, params)
@@ -253,29 +251,46 @@ def tts():
             character_name = cha_name
             load_character(character_name)
         gen = get_wav_from_text_api(**params)
+
+
     if stream == False:
-        if save_temp:
-            if request_hash in temp_files:
-                return send_file(temp_files[request_hash], mimetype=f'audio/{format}')
-            else:
-                sampling_rate, audio_data = next(gen)
-                temp_file_path = tempfile.mktemp(suffix=f'.{format}')
-                with open(temp_file_path, 'wb') as temp_file:
-                    sf.write(temp_file, audio_data, sampling_rate, format=format)
-                temp_files[request_hash] = temp_file_path
-                return send_file(temp_file_path, mimetype=f'audio/{format}')
+        if save_temp and request_hash in temp_files:
+            return FileResponse(path=temp_files[request_hash], media_type=f'audio/{format}')
         else:
-            sampling_rate, audio_data = next(gen)
-            wav = io.BytesIO()
+            # 假设 gen 是你的音频生成器
             try:
-                sf.write(wav, audio_data, sampling_rate, format=format)
-            except:
-                sf.write(wav, audio_data, sampling_rate, format='wav')    
-            wav.seek(0)
-            return Response(wav, mimetype=f'audio/{format}')
+                sampling_rate, audio_data = next(gen)
+            except StopIteration:
+                raise HTTPException(status_code=404, detail="Generator is empty or error occurred")
+            # 创建一个临时文件
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{format}') as tmp_file:
+                # 尝试写入用户指定的格式，如果失败则回退到 WAV 格式
+                try:
+                    sf.write(tmp_file, audio_data, sampling_rate, format=format)
+                except Exception as e:
+                    # 如果指定的格式无法写入，则回退到 WAV 格式
+                    sf.write(tmp_file, audio_data, sampling_rate, format='wav')
+                    format = 'wav'  # 更新格式为 wav
+                
+                tmp_file_path = tmp_file.name
+                if save_temp:
+                    temp_files[request_hash] = tmp_file_path
+            # 返回文件响应，FileResponse 会负责将文件发送给客户端
+            return FileResponse(tmp_file_path, media_type=f"audio/{format}", filename=f"audio.{format}")
     else:
         
-        return Response(stream_with_context(gen),  mimetype='audio/wav')
+        return StreamingResponse(gen,  media_type='audio/wav')
 
-if __name__ == '__main__':
-    app.run( host='0.0.0.0', port=tts_port)
+routes = ['/tts']
+try:
+    with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "params_config.json"), "r", encoding="utf-8") as f:
+        config = json.load(f)
+        routes = config.get("route", {}).get("alias", ['/tts'])
+except:
+    pass
+
+for path in routes:
+    app.api_route(path, methods=['GET', 'POST'])(tts)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host=tts_host, port=tts_port)

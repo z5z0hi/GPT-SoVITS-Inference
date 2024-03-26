@@ -12,7 +12,9 @@ class Inference_Config():
         if os.path.exists(self.config_path):
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 config = json.load(f)
+                self.workers = config.get("workers", 10)
                 self.models_path = config.get("models_path", "trained")
+                self.tts_host = config.get("tts_host", "0.0.0.0")
                 self.tts_port = config.get("tts_port", 5000)
                 self.default_batch_size = config.get("batch_size", 1)
                 self.default_word_count = config.get("max_word_count", 50)

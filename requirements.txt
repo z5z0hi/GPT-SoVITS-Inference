@@ -1,5 +1,4 @@
 requests==2.28.1
-flask==3.0.2
 pydub
 
 pydantic
@@ -30,7 +29,7 @@ jieba_fast
 jieba
 LangSegment>=0.2.6
 Faster_Whisper
-flask_httpauth
-flask_cors
+fastapi 
+uvicorn
 wordsegment
 srt
