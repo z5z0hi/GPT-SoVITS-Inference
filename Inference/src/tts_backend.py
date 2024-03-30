@@ -6,12 +6,12 @@ import os, sys
 
 # 尝试清空含有GPT_SoVITS的路径
 for path in sys.path:
-    if path.find(r"GPT_SoVITS") != -1:
+    if (path.find(r"GPT_SoVITS") != -1) or (path.find(r"gsv") != -1):
         sys.path.remove(path)
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
-# sys.path.append(os.path.join(now_dir, "GPT_SoVITS"))
+sys.path.append(os.path.join(now_dir, "GPT_SoVITS"))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import soundfile as sf
@@ -42,10 +42,13 @@ is_classic = inference_config.is_classic
 models_path = inference_config.models_path
 if enable_auth:
     users = inference_config.users
+certfile = inference_config.certfile
+keyfile = inference_config.keyfile
 
 try:
     from GPT_SoVITS.TTS_infer_pack.TTS import TTS
-except ImportError:
+except ImportError as e:
+    print("ImportError occurred: ", str(e))  # 输出导入失败的具体错误信息
     is_classic = True
     pass
 
@@ -317,5 +320,9 @@ def print_ipv4_ip(host = "127.0.0.1", port = 5000):
 
 if __name__ == "__main__":
     print_ipv4_ip(tts_host, tts_port)
-    uvicorn.run(app, host=tts_host, port=tts_port)
+    uvicorn.run(app, host=tts_host, port=tts_port,
+                ssl_certfile=certfile,
+                ssl_keyfile=keyfile
+                )
+
 

@@ -18,7 +18,7 @@ def register_method(name):
         return func
     return decorator
 
-splits = {"，", "。", "？", "！", ",", ".", "?", "!", "~", ":", "：", "—", "…", }
+splits = {"，", "。", "？", "！", ",", ".", "?", "!", ":", "：", "—", }
 
 
 
@@ -150,7 +150,31 @@ def cut2(inp, max_length=50):
 @register_method("cut3")
 def cut3(inp):
     inp = split_long_sentence(inp).strip("\n")
-    return "\n".join(["%s" % item for item in inp.strip("。").split("。")])
+    #return "\n".join(["%s" % item for item in inp.strip("。").split("。")])
+
+    # Segmentation using specified symbols
+    symbols = ['。', '！', '!', '？', '?']
+    sentences = []
+
+    start_index = 0
+    for i, char in enumerate(inp):
+        if char in symbols:
+            sentences.append(inp[start_index:i].strip())
+            start_index = i + 1
+
+    # Handling the case where the last segment doesn't end with any of the specified symbols
+    if start_index < len(inp):
+        sentences.append(inp[start_index:].strip())
+
+    return "\n".join("%s" % item for item in sentences)
+    # 列表推导式 ["%s" % item for item in ...] 是Python中一种简洁高效的创建新列表的方法。在这个表达式中，它遍历了子串列表中的每一个元素（在这里称为 item）。
+    # "%s" % item 是Python的一种格式化字符串方式，这里的 %s 是一个占位符，表示将一个字符串类型的值插入此处。当执行到每个 item 时，会将 item 的值替换掉 %s，即保持原样插入到字符串中。
+    # 例如，假设 inp 字符串为 "你好。世界。再见。"，经过 .split("。") 处理后得到的子串列表为 ['你好', '世界', '再见']。
+    # 列表推导式将会依次处理这三个子串，将其转换为格式化后的字符串 '你好'、'世界' 和 '再见'，虽然它们与原子串内容相同，但在后续的 "\n".join(...) 操作中，这种转换保证了每个子串都能被正确地视为独立的字符串单元进行连接。
+    # 如果sentences列表中的所有元素已经是字符串类型，那么这两行代码的效果实际上是一样的。因为对于字符串类型的元素，"%s" % item不会对其进行任何改变，所以生成的列表与原列表相同。
+    # 在这种情况下，"\n".join("%s" % item for item in sentences)和"\n".join(sentences)都会得到相同的结果。
+    # 但是，如果sentences列表中的元素不是字符串类型，"%s" % item会尝试将它们转换为字符串。这种情况下，使用"%s" % item for item in sentences会在连接之前对每个元素进行字符串转换，
+    # 而"\n".join(sentences)则可能无法正常工作，因为列表中的非字符串类型无法直接用join方法连接。
 
 
 # 按英文句号.切
@@ -201,7 +225,7 @@ def auto_cut(inp, max_length=30):
     inp = inp.replace(". ", "。")
     erase_punds = r'[“”"‘’\'（）()【】[\]{}<>《》〈〉〔〕〖〗〘〙〚〛〛〞〟]'
     inp = re.sub(erase_punds, '', inp)
-    split_punds = r'[?!。？！~：]'
+    split_punds = r'[?!。？！：]'
     if inp[-1] not in split_punds:
         inp+="。"
     items = re.split(f'({split_punds})', inp)
@@ -246,7 +270,7 @@ def auto_cut(inp, max_length=30):
     final_items = []
     for item in items:
         final_items+=process_commas(item,max_length=max_length).split("\n")
-    final_items = [item for item in final_items if item.strip() and not (len(item.strip())==2 and item[0] in "?!，,。？！~：.") and not item.isspace() and not item in "?!，,。？！~：."]
+    final_items = [item for item in final_items if item.strip() and not (len(item.strip())==2 and item[0] in "?!，,。？！：.") and not item.isspace() and not item in "?!，,。？！：."]
     
 
     return "\n".join(final_items)

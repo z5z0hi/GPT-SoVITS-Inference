@@ -39,7 +39,7 @@
         "type": "int",
         "description": "Batch size for processing.",
         "alias": ["batch_size", "batch"],
-        "default": null
+        "default": 15
     },
     "speed": {
         "type": "float",
@@ -87,12 +87,12 @@
         "type": "string",
         "description": "Method for text cutting.",
         "alias": ["cut_method", "cut"],
-        "default": "auto_cut"
+        "default": "cut3"
     },
     "format": {
         "type": "string",
         "description": "Format of the output audio.",
         "alias": ["format"],
-        "default": "wav"
+        "default": "ogg"
     }
 }
