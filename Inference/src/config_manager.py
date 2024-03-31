@@ -15,7 +15,9 @@ class Inference_Config():
                 self.workers = config.get("workers", 10)
                 self.models_path = config.get("models_path", "trained")
                 self.tts_host = config.get("tts_host", "0.0.0.0")
-                self.tts_port = config.get("tts_port", 5000)
+                self.tts_port = config.get("tts_port", 7880)
+                self.character_manager_port = config.get("character_manager_port", 7868)
+                self.webui_port = config.get("webui_port", 7867)
                 self.default_batch_size = config.get("batch_size", 1)
                 self.default_word_count = config.get("max_word_count", 50)
                 self.enable_auth = config.get("enable_auth", "false").lower() == "true"
@@ -26,6 +28,8 @@ class Inference_Config():
                 self.locale_language = None if locale_language.lower() == "auto" else locale_language
                 if self.enable_auth:
                     self.users = config.get("user", {})
+                self.certfile=config.get("certfile", None)
+                self.keyfile=config.get("keyfile", None)
 
 inference_config = Inference_Config()
 

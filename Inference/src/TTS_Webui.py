@@ -21,7 +21,8 @@ inference_config = Inference_Config()
 
 config_path = inference_config.config_path
 locale_language = inference_config.locale_language
-tts_port = inference_config.tts_port
+tts_host = inference_config.tts_host
+webui_port = inference_config.webui_port
 default_batch_size = inference_config.default_batch_size
 default_word_count = inference_config.default_word_count
 enable_auth = inference_config.enable_auth
@@ -36,10 +37,14 @@ if enable_auth:
         default_password = users[default_username]
     except:
         pass
-
+certfile = inference_config.certfile
+keyfile = inference_config.keyfile
 
 from tools.i18n.i18n import I18nAuto
-i18n = I18nAuto(locale_language , os.path.join(os.path.dirname(os.path.dirname(__file__)), "i18n/locale"))
+# i18n = I18nAuto(locale_language , os.path.join(os.path.dirname(os.path.dirname(__file__)), "i18n/locale"))
+# 上面这句运行后会出现：
+# TypeError: I18nAuto.__init__() takes from 1 to 2 positional arguments but 3 were given
+i18n = I18nAuto(locale_language)
 
 language_list = ["auto", "zh", "en", "ja", "all_zh", "all_ja"]
 translated_language_list = [i18n("auto"), i18n("zh"), i18n("en"), i18n("ja"), i18n("all_zh"), i18n("all_ja")] # 由于i18n库的特性，这里需要全部手输一遍
@@ -544,4 +549,5 @@ with gr.Blocks() as app:
     )
 
 
-app.launch(server_port=9867, show_error=True, share=is_share, inbrowser=True)
+app.launch(server_name=tts_host, server_port=webui_port, show_error=True, share=is_share, ssl_verify=False,
+           ssl_keyfile=keyfile, ssl_certfile=certfile)

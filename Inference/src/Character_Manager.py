@@ -28,6 +28,15 @@ global infer_config
 infer_config = {
 }
 
+# 从配置文件读取配置
+from Inference.src.config_manager import Inference_Config
+inference_config = Inference_Config()
+
+tts_host = inference_config.tts_host
+character_manager_port = inference_config.character_manager_port
+certfile = inference_config.certfile
+keyfile = inference_config.keyfile
+
 # 取得模型文件夹路径
 config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.json")
 
@@ -40,7 +49,10 @@ if os.path.exists(config_path):
         
 from tools.i18n.i18n import I18nAuto
 
-i18n = I18nAuto(locale_language ,os.path.join(os.path.dirname(os.path.dirname(__file__)), "i18n/locale"))
+# i18n = I18nAuto(locale_language ,os.path.join(os.path.dirname(os.path.dirname(__file__)), "i18n/locale"))
+# 上面这句运行后会出现：
+# TypeError: I18nAuto.__init__() takes from 1 to 2 positional arguments but 3 were given
+i18n = I18nAuto(locale_language)
 
 # 微软提供的SSML情感表
 emotional_styles = [
@@ -333,4 +345,5 @@ with gr.Blocks() as app:
     auto_generate_info_button.click(auto_generate_json, inputs=[character_dropdown,models_path], outputs=column_items)
 
 
-app.launch(server_port=9868, show_error=True,debug=True, inbrowser=True)
+app.launch(server_name=tts_host, server_port=character_manager_port, show_error=True, debug=True,
+           ssl_verify=False, ssl_keyfile=keyfile, ssl_certfile=certfile)
