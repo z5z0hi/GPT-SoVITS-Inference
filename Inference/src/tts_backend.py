@@ -6,7 +6,7 @@ import os, sys
 
 # 尝试清空含有GPT_SoVITS的路径
 for path in sys.path:
-    if (path.find(r"GPT_SoVITS") != -1) or (path.find(r"gsv") != -1):
+    if (path.find(r"GPT_SoVITS") != -1) or (path.find(r"gsv_z") != -1):
         sys.path.remove(path)
 
 now_dir = os.getcwd()
