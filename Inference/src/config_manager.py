@@ -30,6 +30,7 @@ class Inference_Config():
                     self.users = config.get("user", {})
                 self.certfile=config.get("certfile", None)
                 self.keyfile=config.get("keyfile", None)
+                self.device = config.get("device", 'auto')
 
 inference_config = Inference_Config()
 

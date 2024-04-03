@@ -87,7 +87,7 @@
         "type": "string",
         "description": "Method for text cutting.",
         "alias": ["cut_method", "cut"],
-        "default": "cut3"
+        "default": "auto_cut"
     },
     "format": {
         "type": "string",

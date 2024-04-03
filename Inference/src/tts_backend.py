@@ -14,7 +14,7 @@ sys.path.append(now_dir)
 sys.path.append(os.path.join(now_dir, "GPT_SoVITS"))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-import soundfile as sf
+# import soundfile as sf
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,6 +24,15 @@ import io
 import urllib.parse
 import tempfile
 import hashlib, json
+
+# 使用soundfile合成较长的ogg格式音频时会出错，这是soundfile本身的问题，暂时无法解决，因此换成pydub
+from pydub import AudioSegment
+
+#关闭pydub.converter输出的DEBUG信息
+#logging.ERROR会禁用DEBUG和更低级别的日志输出
+import logging
+l = logging.getLogger("pydub.converter")
+l.setLevel(logging.ERROR)
 
 # 将当前文件所在的目录添加到 sys.path
 
@@ -230,7 +239,6 @@ def get_params(data = None):
     return params, cha_name, format, save_temp, request_hash, stream
 
 
-
 async def tts(request: Request):
 
     
@@ -255,7 +263,6 @@ async def tts(request: Request):
             load_character(character_name)
         gen = get_wav_from_text_api(**params)
 
-
     if stream == False:
         if save_temp and request_hash in temp_files:
             return FileResponse(path=temp_files[request_hash], media_type=f'audio/{format}')
@@ -265,24 +272,39 @@ async def tts(request: Request):
                 sampling_rate, audio_data = next(gen)
             except StopIteration:
                 raise HTTPException(status_code=404, detail="Generator is empty or error occurred")
+
+            # 使用pydub处理音频
+            audio_segment = AudioSegment(
+            audio_data.tobytes(),
+            frame_rate=sampling_rate,
+            sample_width=2,
+            channels=1
+            )
+
             # 创建一个临时文件
             with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{format}') as tmp_file:
                 # 尝试写入用户指定的格式，如果失败则回退到 WAV 格式
                 try:
-                    sf.write(tmp_file, audio_data, sampling_rate, format=format)
+                    #sf.write(tmp_file, audio_data, sampling_rate, format=format)
+                    audio_segment.export(
+                        tmp_file, format=format, bitrate='96k',)
                 except Exception as e:
                     # 如果指定的格式无法写入，则回退到 WAV 格式
-                    sf.write(tmp_file, audio_data, sampling_rate, format='wav')
+                    # sf.write(tmp_file, audio_data, sampling_rate, format='wav')
+                    audio_segment.export(
+                        tmp_file, format='wav', bitrate='96k',)
                     format = 'wav'  # 更新格式为 wav
-                
+
                 tmp_file_path = tmp_file.name
                 if save_temp:
                     temp_files[request_hash] = tmp_file_path
-            # 返回文件响应，FileResponse 会负责将文件发送给客户端
-            return FileResponse(tmp_file_path, media_type=f"audio/{format}", filename=f"audio.{format}")
+            try:
+                # 返回文件响应，FileResponse 会负责将文件发送给客户端
+                return FileResponse(tmp_file_path, media_type=f"audio/{format}", filename=f"audio.{format}")
+            except Exception as e:
+                print(f"Error during return FileResponse: {e}")
     else:
-        
-        return StreamingResponse(gen,  media_type='audio/wav')
+        return StreamingResponse(gen,  media_type=f"audio/{format}")
 
 routes = ['/tts']
 try:

@@ -457,10 +457,20 @@ def get_streaming_tts_wav(
     )
 
     if byte_stream:
-        yield wave_header_chunk()
+        # yield wave_header_chunk()
+        # OGG格式不需要生成单独的头部信息块，可以直接发送音频数据
         for chunk in chunks:
             assert isinstance(chunk, bytes), "Chunk must be bytes"
-            yield chunk
+            audio = AudioSegment(chunk, sample_width=2, frame_rate=32000, channels=1)
+
+            # 将音频转换为OGG格式
+            ogg_io = io.BytesIO()
+            audio.export(ogg_io, format="ogg",
+                         bitrate="96k", codec='libvorbis')
+
+            # 返回OGG格式的音频数据
+            ogg_io.seek(0)
+            yield ogg_io.read()
     else:
         # Send chunk files
         i = 0

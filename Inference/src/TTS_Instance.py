@@ -3,6 +3,7 @@
 import io, wave
 import os, json, sys
 import threading
+from pydub import AudioSegment
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -71,23 +72,17 @@ class TTS_instance:
 
     # from https://github.com/RVC-Boss/GPT-SoVITS/pull/448
     def get_streaming_tts_wav(self, params):
-        # from https://huggingface.co/spaces/coqui/voice-chat-with-mistral/blob/main/app.py
-        def wave_header_chunk(frame_input=b"", channels=1, sample_width=2, sample_rate=32000):
-            wav_buf = io.BytesIO()
-            with wave.open(wav_buf, "wb") as vfout:
-                vfout.setnchannels(channels)
-                vfout.setsampwidth(sample_width)
-                vfout.setframerate(sample_rate)
-                vfout.writeframes(frame_input)
-
-            wav_buf.seek(0)
-            return wav_buf.read()
         chunks = self.tts_pipline.run(params)
-        yield wave_header_chunk()
         for sr, chunk in chunks:
             if chunk is not None:
-                chunk = chunk.tobytes()
-                yield chunk
+                audio = AudioSegment(chunk, sample_width=2, frame_rate=sr, channels=1)
+                # 将音频转换为OGG格式
+                ogg_io = io.BytesIO()
+                audio.export(ogg_io, format="ogg",
+                            bitrate="96k", codec='libvorbis')
+                # 返回OGG格式的音频数据
+                ogg_io.seek(0)
+                yield ogg_io.read()
             else:
                 print("None chunk")
                 pass
@@ -150,7 +145,7 @@ class TTS_instance:
     ):
         
         text = text.replace("\r", "\n").replace("<br>", "\n").replace("\t", " ")
-        text = text.replace("……","。").replace("…","。").replace("\n\n","\n").replace("。\n","\n").replace("\n", "。\n")
+        text = text.replace("……","。").replace("\n\n","\n").replace("。\n","\n").replace("\n", "。\n")
         # 加载环境配置
         config = load_infer_config(os.path.join(models_path, self.character))
 

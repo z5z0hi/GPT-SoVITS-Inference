@@ -91,7 +91,7 @@ def auto_cut(inp):
     # inp += '。'
     inp = inp.strip("\n")
     
-    split_punds = r'[?!。？！~：]'
+    split_punds = r'[?!。？！：]'
     if inp[-1] not in split_punds:
         inp+="。"
     items = re.split(f'({split_punds})', inp)
@@ -99,7 +99,7 @@ def auto_cut(inp):
 
     def process_commas(text):
 
-        separators = ['，', ',', '、', '——', '…']
+        separators = ['，', ',', '、', '——']
         count = 0
         processed_text = ""
         for char in text:
