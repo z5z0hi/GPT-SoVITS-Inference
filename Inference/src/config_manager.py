@@ -218,8 +218,4 @@ def get_deflaut_character_name():
 
 def remove_character_path(full_path,character_path):
     # 从full_path中移除character_path部分
-    relative_path = full_path.replace(character_path, '')
-    # 如果relative_path以路径分隔符开头，去除它
-    if relative_path.startswith(os.path.sep):
-        relative_path = relative_path[len(os.path.sep):]
-    return relative_path
+    return os.path.relpath(full_path, character_path)
