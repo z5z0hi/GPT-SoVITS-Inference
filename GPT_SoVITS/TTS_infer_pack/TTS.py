@@ -223,8 +223,8 @@ class TTS:
         self.precision:torch.dtype = torch.float16 if self.configs.is_half else torch.float32
 
     def _init_models(self,):
-        self.init_t2s_weights(self.configs.t2s_weights_path)
-        self.init_vits_weights(self.configs.vits_weights_path)
+        # self.init_t2s_weights(self.configs.t2s_weights_path)
+        # self.init_vits_weights(self.configs.vits_weights_path)
         self.init_bert_weights(self.configs.bert_base_path)
         self.init_cnhuhbert_weights(self.configs.cnhuhbert_base_path)
         # self.enable_half_precision(self.configs.is_half)
