@@ -5,13 +5,12 @@
     "tts_host": "0.0.0.0",
     "half_precision": "auto",
     "device": "auto",
-    "workers": 3,
     "batch_size": 10,
     "max_word_count": 25,
     "max_text_length": -1,
     "is_share": "false",
     "classic_inference": "false",
-    "disabled_features": ["stream"],
+
     
     "备注0": "locale是语言环境，auto表示自动选择，如果你想要强制指定语言环境，可以填写zh_CN或者en_US等等",
     "备注1": "路径可以填写绝对路径或者相对路径，相对路径指的是在主项目根目录的相对路径",
@@ -22,5 +21,5 @@
     "备注6": "max_text_length仅是app.py输入框的最大限制文本长度，-1表示不限制",
     "备注7": "share代表是否分享你的前端为一个共享gradio，就可以分享链接给你的朋友了，默认为false",
     "备注8": "classic_inference代表是否使用经典的推理方式，而不使用并行推理，默认为false",
-    "备注9": "disabled_features代表禁用的功能，比如stream代表流式输入，如果你不想要你的用户使用某些功能，可以在这里禁用"
+
 }
