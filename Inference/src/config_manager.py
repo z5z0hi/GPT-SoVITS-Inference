@@ -136,24 +136,25 @@ def update_character_info():
 
     return {"deflaut_character": default_character, "characters_and_emotions": characters_and_emotions}
 
+def test_fp16_computation():
+    # 检查CUDA是否可用
+    if not torch.cuda.is_available():
+        return False, "CUDA is not available. Please check your installation."
+
+    try:
+        # 创建一个简单的半精度张量计算任务
+        # 例如，执行一个半精度的矩阵乘法
+        a = torch.randn(3, 3, dtype=torch.float16).cuda()  # 将张量a转换为半精度并移动到GPU
+        b = torch.randn(3, 3, dtype=torch.float16).cuda()  # 将张量b转换为半精度并移动到GPU
+        c = torch.matmul(a, b)  # 执行半精度的矩阵乘法
+        # 如果没有发生错误，我们认为GPU支持半精度运算
+        return True, "Your GPU supports FP16 computation."
+    except Exception as e:
+        # 如果执行过程中发生异常，我们认为GPU不支持半精度运算
+        return False, f"Your GPU does not support FP16 computation. Error: {e}"
+
+
 def get_device_info():
-    def test_fp16_computation():
-        # 检查CUDA是否可用
-        if not torch.cuda.is_available():
-            return False, "CUDA is not available. Please check your installation."
-        
-        try:
-            # 创建一个简单的半精度张量计算任务
-            # 例如，执行一个半精度的矩阵乘法
-            a = torch.randn(3, 3, dtype=torch.float16).cuda()  # 将张量a转换为半精度并移动到GPU
-            b = torch.randn(3, 3, dtype=torch.float16).cuda()  # 将张量b转换为半精度并移动到GPU
-            c = torch.matmul(a, b)  # 执行半精度的矩阵乘法
-            # 如果没有发生错误，我们认为GPU支持半精度运算
-            return True, "Your GPU supports FP16 computation."
-        except Exception as e:
-            # 如果执行过程中发生异常，我们认为GPU不支持半精度运算
-            return False, f"Your GPU does not support FP16 computation. Error: {e}"
-        
     global device, is_half
     try:
         return device, is_half
@@ -176,7 +177,6 @@ def get_device_info():
                     is_half = (device == "cpu")
                 if _config.get("half_precision", "auto") != "auto":
                     is_half = _config["half_precision"].lower() == "true"
-        import torch
 
         supports_fp16, message = test_fp16_computation()
         if not supports_fp16 and is_half:
@@ -184,7 +184,8 @@ def get_device_info():
             print(message)
 
         return device, is_half
-    
+
+
 def get_deflaut_character_name():
     global default_character
     try:
