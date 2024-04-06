@@ -39,6 +39,7 @@ if os.path.exists(config_path):
         locale_language = None if locale_language.lower() == "auto" else locale_language
         
 from tools.i18n.i18n import I18nAuto
+from Inference.src.config_manager import inference_config
 
 i18n = I18nAuto(locale_language ,os.path.join(os.path.dirname(os.path.dirname(__file__)), "i18n/locale"))
 
@@ -266,8 +267,8 @@ def change_parameters(index, wav_path, emotion_list, prompt_language, prompt_tex
 
     return gr.Dropdown(value=wav_path), gr.Dropdown(value=emotion_list), gr.Dropdown(value=prompt_language), gr.Textbox(value=prompt_text), gr.Audio(os.path.join(state["edited_character_path"],wav_path))
 
-with gr.Blocks() as app:
 
+def run_as_tab(app: gr.Blocks):
     with gr.Row() as status_bar:       
         # 创建模型文件夹路径的输入框
         models_path = gr.Textbox(value=state["models_path"], label=i18n("模型文件夹路径"), scale=3)
@@ -331,6 +332,8 @@ with gr.Blocks() as app:
     add_emotion_button.click(add_emotion, outputs=column_items)
     read_info_from_json_button.click(read_json_from_file, inputs=[character_dropdown,models_path] , outputs=column_items)
     auto_generate_info_button.click(auto_generate_json, inputs=[character_dropdown,models_path], outputs=column_items)
-
-
-app.launch(server_port=9868, show_error=True,debug=True, inbrowser=True)
+    
+if __name__ == '__main__':
+    with gr.Blocks() as app:
+        run_as_tab(app)
+    app.launch(server_port=9868, show_error=True,debug=True, inbrowser=True, share=inference_config.is_share)
