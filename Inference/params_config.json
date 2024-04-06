@@ -51,7 +51,7 @@
         "type": "int",
         "description": "Top K parameter for sampling.",
         "alias": ["top_k"],
-        "default": 3
+        "default": 1
     },
     "top_p": {
         "type": "float",

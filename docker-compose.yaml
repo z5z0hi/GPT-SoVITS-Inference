@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  gpt-sovits:
-    image: breakstring/gpt-sovits:latest   # please change the image name and tag base your environment. If the tag contains the word 'elite', such as "latest-elite", it indicates that the image does not include the necessary models such as GPT-SoVITS, UVR5, Damo ASR, etc. You will need to download them yourself and map them into the container.
-    container_name: gpt-sovits-container
+  gsvi:
+    image: breakstring/gsvi:latest   # please change the image name and tag base your environment. If the tag contains the word 'elite', such as "latest-elite", it indicates that the image does not include the necessary models such as gsvi, UVR5, Damo ASR, etc. You will need to download them yourself and map them into the container.
+    container_name: gsvi-container
     environment:
       - is_half=False
       - is_share=False

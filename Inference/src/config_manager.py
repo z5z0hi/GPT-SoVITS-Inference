@@ -22,6 +22,7 @@ class Inference_Config():
                 self.is_classic = config.get("classic_inference", "false").lower() == "true"
                 self.is_share = config.get("is_share", "false").lower() == "true"
                 self.max_text_length = config.get("max_text_length", -1)
+                self.disabled_features = config.get("disabled_features", [])
                 locale_language = str(config.get("locale", "auto"))
                 self.locale_language = None if locale_language.lower() == "auto" else locale_language
                 if self.enable_auth:
