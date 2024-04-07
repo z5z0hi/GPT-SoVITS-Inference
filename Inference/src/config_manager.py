@@ -24,6 +24,7 @@ class Inference_Config():
                 self.is_classic = config.get("classic_inference", "false").lower() == "true"
                 self.is_share = config.get("is_share", "false").lower() == "true"
                 self.max_text_length = config.get("max_text_length", -1)
+                self.disabled_features = config.get("disabled_features", [])
                 locale_language = str(config.get("locale", "auto"))
                 self.locale_language = None if locale_language.lower() == "auto" else locale_language
                 if self.enable_auth:
@@ -140,6 +141,24 @@ def update_character_info():
 
     return {"deflaut_character": default_character, "characters_and_emotions": characters_and_emotions}
 
+def test_fp16_computation():
+    # 检查CUDA是否可用
+    if not torch.cuda.is_available():
+        return False, "CUDA is not available. Please check your installation."
+
+    try:
+        # 创建一个简单的半精度张量计算任务
+        # 例如，执行一个半精度的矩阵乘法
+        a = torch.randn(3, 3, dtype=torch.float16).cuda()  # 将张量a转换为半精度并移动到GPU
+        b = torch.randn(3, 3, dtype=torch.float16).cuda()  # 将张量b转换为半精度并移动到GPU
+        c = torch.matmul(a, b)  # 执行半精度的矩阵乘法
+        # 如果没有发生错误，我们认为GPU支持半精度运算
+        return True, "Your GPU supports FP16 computation."
+    except Exception as e:
+        # 如果执行过程中发生异常，我们认为GPU不支持半精度运算
+        return False, f"Your GPU does not support FP16 computation. Error: {e}"
+
+
 def get_device_info():
     global device, is_half
     try:
@@ -163,8 +182,15 @@ def get_device_info():
                     is_half = (device == "cpu")
                 if _config.get("half_precision", "auto") != "auto":
                     is_half = _config["half_precision"].lower() == "true"
+
+        supports_fp16, message = test_fp16_computation()
+        if not supports_fp16 and is_half:
+            is_half = False
+            print(message)
+
         return device, is_half
-    
+
+
 def get_deflaut_character_name():
     global default_character
     try:
@@ -197,8 +223,4 @@ def get_deflaut_character_name():
 
 def remove_character_path(full_path,character_path):
     # 从full_path中移除character_path部分
-    relative_path = full_path.replace(character_path, '')
-    # 如果relative_path以路径分隔符开头，去除它
-    if relative_path.startswith(os.path.sep):
-        relative_path = relative_path[len(os.path.sep):]
-    return relative_path
+    return os.path.relpath(full_path, character_path)

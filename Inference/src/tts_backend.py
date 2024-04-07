@@ -49,6 +49,7 @@ default_word_count = inference_config.default_word_count
 enable_auth = inference_config.enable_auth
 is_classic = inference_config.is_classic
 models_path = inference_config.models_path
+disabled_features = inference_config.disabled_features
 if enable_auth:
     users = inference_config.users
 certfile = inference_config.certfile
@@ -162,29 +163,33 @@ params_config = get_params_config()
 
 
 def get_params(data = None):
-    def get_param_value(param_config):
-        for alias in param_config['alias']:
-            if alias in data:
-                if param_config['type'] == 'int':
-                    return int(data[alias])
-                elif param_config['type'] == 'float':
-                    return float(data[alias])
-                elif param_config['type'] == 'bool':
-                    return str(data[alias]).lower() in ('true', '1', 't', 'y', 'yes', "allow", "allowed")
-                else:  # 默认为字符串
-                    return urllib.parse.unquote(data[alias])
+    def get_param_value(param_name):
+        # ban disabled features
+        param_config = params_config[param_name]
+        if param_name not in disabled_features:
+            for alias in param_config['alias']:
+                if alias in data:
+                    if param_config['type'] == 'int':
+                        return int(data[alias])
+                    elif param_config['type'] == 'float':
+                        return float(data[alias])
+                    elif param_config['type'] == 'bool':
+                        return str(data[alias]).lower() in ('true', '1', 't', 'y', 'yes', "allow", "allowed")
+                    else:  # 默认为字符串
+                        return urllib.parse.unquote(data[alias])
         return param_config['default']
+    
     
     if params_config is None:
         raise FileNotFoundError("params_config.json not found.")
     
     # 参数提取
-    text = get_param_value(params_config['text'])
+    text = get_param_value('text')
     if text.strip() == "":
         raise ValueError("Text cannot be empty.")
     
-    cha_name = get_param_value(params_config['cha_name'])
-    speaker_id = get_param_value(params_config['speaker_id'])
+    cha_name = get_param_value('cha_name')
+    speaker_id = get_param_value('speaker_id')
     if cha_name is None and speaker_id is not None:
         try:
             cha_name = list(update_character_info()['characters_and_emotions'])[speaker_id]
@@ -192,20 +197,20 @@ def get_params(data = None):
             cha_name = None
     
 
-    text_language = get_param_value(params_config['text_language'])
-    batch_size = get_param_value(params_config['batch_size'])
+    text_language = get_param_value('text_language')
+    batch_size = get_param_value('batch_size')
     if batch_size is None:
         batch_size = default_batch_size
-    speed = get_param_value(params_config['speed'])
-    top_k = get_param_value(params_config['top_k'])
-    top_p = get_param_value(params_config['top_p'])
-    temperature = get_param_value(params_config['temperature'])
-    seed = get_param_value(params_config['seed'])
-    stream = get_param_value(params_config['stream'])
+    speed = get_param_value('speed')
+    top_k = get_param_value('top_k')
+    top_p = get_param_value('top_p')
+    temperature = get_param_value('temperature')
+    seed = get_param_value('seed')
+    stream = get_param_value('stream')
     
-    cut_method = get_param_value(params_config['cut_method'])
-    character_emotion = get_param_value(params_config['character_emotion'])
-    format = get_param_value(params_config['format'])
+    cut_method = get_param_value('cut_method')
+    character_emotion = get_param_value('character_emotion')
+    format = get_param_value('format')
     
    
     # 下面是已经获得了参数后进行的操作
@@ -233,8 +238,13 @@ def get_params(data = None):
     # if not format in ['wav', 'mp3', 'ogg']:
     #     raise ValueError("Invalid format.")
     
-    save_temp = get_param_value(params_config['save_temp'])
-    request_hash = generate_file_hash(text, text_language, top_k, top_p, temperature, character_emotion, cha_name, seed)
+    save_temp = get_param_value('save_temp')
+    if save_temp:
+        request_hash = generate_file_hash(text, text_language, top_k, top_p, temperature, character_emotion, cha_name, seed)
+    else:
+        request_hash = None
+    
+    
     
     return params, cha_name, format, save_temp, request_hash, stream
 

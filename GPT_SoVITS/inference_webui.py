@@ -6,6 +6,7 @@
 全部按英文识别
 全部按日文识别
 '''
+import random
 import os, sys
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -81,7 +82,7 @@ if bert_path is not None:
     tts_config.bert_base_path = bert_path
     
 print(tts_config)
-tts_pipline = TTS(tts_config)
+tts_pipeline = TTS(tts_config)
 gpt_path = tts_config.t2s_weights_path
 sovits_path = tts_config.vits_weights_path
 
@@ -94,6 +95,7 @@ def inference(text, text_lang,
               split_bucket,fragment_interval,
               seed,
               ):
+    actual_seed = seed if seed not in [-1, "", None] else random.randrange(1 << 32)
     inputs={
         "text": text,
         "text_lang": dict_language[text_lang],
@@ -109,11 +111,10 @@ def inference(text, text_lang,
         "split_bucket":split_bucket,
         "return_fragment":False,
         "fragment_interval":fragment_interval,
-        "seed":seed,
+        "seed":actual_seed,
     }
-    
-    for item in tts_pipline.run(inputs):
-        yield item
+    for item in tts_pipeline.run(inputs):
+        yield item, actual_seed
         
 def custom_sort_key(s):
     # 使用正则表达式提取字符串中的数字部分和非数字部分
@@ -161,8 +162,8 @@ with gr.Blocks(title="GPT-SoVITS WebUI") as app:
             SoVITS_dropdown = gr.Dropdown(label=i18n("SoVITS模型列表"), choices=sorted(SoVITS_names, key=custom_sort_key), value=sovits_path, interactive=True)
             refresh_button = gr.Button(i18n("刷新模型路径"), variant="primary")
             refresh_button.click(fn=change_choices, inputs=[], outputs=[SoVITS_dropdown, GPT_dropdown])
-            SoVITS_dropdown.change(tts_pipline.init_vits_weights, [SoVITS_dropdown], [])
-            GPT_dropdown.change(tts_pipline.init_t2s_weights, [GPT_dropdown], [])
+            SoVITS_dropdown.change(tts_pipeline.init_vits_weights, [SoVITS_dropdown], [])
+            GPT_dropdown.change(tts_pipeline.init_t2s_weights, [GPT_dropdown], [])
     
     with gr.Row():
         with gr.Column():
@@ -224,9 +225,9 @@ with gr.Blocks(title="GPT-SoVITS WebUI") as app:
                 split_bucket,fragment_interval,
                 seed
              ],
-            [output],
+            [output, seed],
         )
-        stop_infer.click(tts_pipline.stop, [], [])
+        stop_infer.click(tts_pipeline.stop, [], [])
 
     with gr.Group():
         gr.Markdown(value=i18n("文本切分工具。太长的文本合成出来效果不一定好，所以太长建议先切。合成会根据文本的换行分开合成再拼起来。"))
